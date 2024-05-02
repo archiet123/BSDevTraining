@@ -1,0 +1,4 @@
+interface IExportType
+{
+    procedure SetExportType()
+}
