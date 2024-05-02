@@ -109,8 +109,141 @@ page 50149 AT_MovieListPGE
                     rec.DownloadImage();
                 end;
             }
+
+            action("Backup Movie")
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                var
+                    AddressProvider: Interface IMovieBackup;
+                begin
+                    AddressproviderFactory(AddressProvider);
+                    Message(AddressProvider.GetAddress(rec."No."));
+                end;
+            }
+
+            action("Set XML")
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+                    sendTo := sendTo::xml;
+                end;
+            }
+
+            action("Set Json")
+            {
+                ApplicationArea = All;
+
+                trigger OnAction()
+                begin
+                    sendTo := sendTo::json;
+                end;
+            }
         }
+
+
     }
+    procedure AddressproviderFactory(var iAddressProvider: Interface IMovieBackup)
+    begin
+        iAddressProvider := sendTo;
+    end;
+
     var
         JsonResult: Text;
+        sendTo: enum SendTo;
+
 }
+
+interface "IMovieBackup"
+{
+    procedure GetAddress(var "No.": Code[20]): Text
+}
+
+codeunit 50129 BackupXML implements IMovieBackup
+{
+
+    procedure GetAddress(var "No.": Code[20]): Text
+    var
+        // ExampleAddressLbl: Label 'XML';
+        Text: Text[250];
+        Data: BigText;
+        ins: InStream;
+        outs: OutStream;
+        TempBLOB: codeunit "Temp Blob";
+        filename: Text;
+    begin
+        Text := 'XML ' + "No.";
+
+        Data.AddText('Hello World');
+        TempBLOB.CreateOutStream(outs);
+        Data.Write(outs);
+        TempBLOB.CreateInStream(ins);
+        filename := "No." + '.XML';
+        DownloadFromStream(
+            ins,  // InStream to save
+            '',   // Not used in cloud
+            '',   // Not used in cloud
+            '',   // Not used in cloud
+            filename); // Filename is browser download folder
+        exit(Text);
+    end;
+}
+
+codeunit 50128 BackupJSON implements IMovieBackup
+{
+
+    procedure GetAddress(var "No.": Code[20]): Text
+    var
+        // ExampleAddressLbl: Label 'JSON';
+        Text: Text[250];
+        Data: BigText;
+        ins: InStream;
+        outs: OutStream;
+        TempBLOB: codeunit "Temp Blob";
+        filename: Text;
+
+    begin
+        Text := 'JSON ' + "No.";
+        Data.AddText('Hello World');
+        TempBLOB.CreateOutStream(outs);
+        Data.Write(outs);
+        TempBLOB.CreateInStream(ins);
+        filename := "No." + '.JSON';
+        DownloadFromStream(
+            ins,  // InStream to save
+            '',   // Not used in cloud
+            '',   // Not used in cloud
+            '',   // Not used in cloud
+            filename); // Filename is browser download folder
+        exit(Text);
+        exit(Text);
+    end;
+}
+
+
+//this enum chooses what codeunit runs
+//i need a codeunit for every type of backup type there is
+enum 50127 SendTo implements IMovieBackup
+{
+    Extensible = true;
+
+    value(0; xml)
+    {
+        Implementation = IMovieBackup = BackupXML;
+    }
+
+    value(1; json)
+    {
+        Implementation = IMovieBackup = BackupJSON;
+    }
+}
+
+interface IMovie
+{
+    procedure BackupMovie("No.": Code[20]);
+}
+
+

@@ -148,15 +148,23 @@ table 50149 AT_MovieTBL
         Clear(JsonBuffer);
         Clear(count);
         Clear(TitleList);
+        Clear(NoSeries);
         JsonBuffer.ReadFromText(JsonText);
         JsonBuffer.SetFilter("Token type", 'String');
         // page.Run(page::AT_JsonBufferPGE, JsonBuffer);
         if JsonBuffer.FindSet() then begin
             // repeat
+
             Clear(rec);
             Clear(Instr);
-            count := count + 1;
-            rec."No." := Format(count);
+
+            //This should filter ITEM No Series and get next available no.
+            NoSeries.SetFilter("Series Code", 'ITEM');
+            if NoSeries.FindFirst() then begin
+                rec."No." := NoSeriesMan.GetNextNo(NoSeries."Series Code", NoSeries."Last Date Used", true)
+
+            end;
+            // rec."No." := NoSeries."Last No. Used";
             rec.Title := JsonBuffer.Value;
 
 
@@ -196,6 +204,7 @@ table 50149 AT_MovieTBL
     procedure DownloadImage()
     var
         ImageURL: Label 'https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg';//Image URL
+        ImageURL2: Label 'https://m.media-amazon.com/images/M/MV5BNWM3MDU2MWQtYjdlNC00NDBlLTkyNGMtNjdhYjdlNTdiNTFlXkEyXkFqcGdeQXVyNTEwNDY2MjU@._V1_SX300.jpg';
         ImageHTTP: HttpClient;
         ImageResponse: HttpResponseMessage;
         Instr: InStream;
@@ -204,7 +213,7 @@ table 50149 AT_MovieTBL
         // if not ImageHTTP.Get(StrSubstNo(omdbapi), omdbapiResponse) then begin
         //     SendErrorNotification('Cannot Download Image');
 
-        ImageHTTP.Get(ImageURL, ImageResponse);
+        ImageHTTP.Get(ImageURL2, ImageResponse);
         ImageResponse.Content.ReadAs(InStr);
         Clear(Rec.Image);
         rec.Image.ImportStream(InStr, 'Demo picture for item ' + Format(rec."No."));
@@ -227,5 +236,6 @@ table 50149 AT_MovieTBL
     var
         compinfo: page "Company Information";
         MovieID: text;
-        NoSeries: Record "No. Series";
+        NoSeries: Record "No. Series Line";
+        NoSeriesMan: Codeunit 396;
 }
